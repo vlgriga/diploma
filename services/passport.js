@@ -25,25 +25,22 @@ passport.use(
     new GoogleStrategy({
         clientID: keys.googleClientID,
         clientSecret: keys.googleClientSecret,
-        callbackURL: '/auth/google/callback'
+        callbackURL: '/auth/google/callback',
+        proxy: true
     }, 
-    (accessToken, refreshToken, profile, done) => {
+    async (accessToken, refreshToken, profile, done) => {
         // search if user are alredy in DB
-        User.findOne({ googleID: profile.id})
-        .then( (existingUser) => {
-            if(existingUser){
-                // already have a record
-                // Passport , everything is fine. Just finish
-                done(null,existingUser) // put to the Serialize
-            } else {
-                // Take callback and add user for User schems ( see more in User.js)
-                new User({ googleID: profile.id }).save()
-                .then( (user) => 
-                done(null, user)); // put to the Serialize
-            }
-        })
+        const existingUser = await User.findOne({ googleID: profile.id });
+       
+        if(existingUser){
+            // already have a record;  Passport , everything is fine. Just finish
+            return done(null, existingUser); // put to the Serialize
+        }
 
-        
+        // we dont' have a user record with this ID ( see more in User.js)
+        const user = await new User({ googleID: profile.id }).save();
+        done(null, user); // put to the Serialize
+              
     }
 )); 
 
